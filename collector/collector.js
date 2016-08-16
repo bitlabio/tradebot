@@ -2,11 +2,14 @@
 //calculate delta in 1tick, 1minute, 5minute, 1hour, 1day, 10day intervals.
 //be able to tell me what is the fastest growing share right now.
 
+/*
+
+npm install mongojs 
+
+*/
 
 var mongojs = require('mongojs')
-var db = mongojs('polo',["ticks"])
-
-
+var db = mongojs('tradebot',["collector_polo"])
 
 console.log("polo collector3")
 
@@ -46,7 +49,7 @@ var polotick = function(cb) {
 	  	//console.log();
 	  	var jsontick = JSON.parse(buffer);
 	  	jsontick.timestamp = Date.now();
-	  	db.ticks.save(jsontick, function (err,res) {
+	  	db.collector_polo.save(jsontick, function (err,res) {
 			console.log(jsontick)
 			console.log(res)
 		});

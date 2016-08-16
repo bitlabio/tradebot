@@ -1,6 +1,6 @@
-// handshake.ws server
+// tradebot server
 var config = {}
-config.db = "handshake"
+config.db = "tradebot"
 //config.env = "production";
 config.env = 'development';
 
@@ -17,7 +17,7 @@ var path      = require("path");
 var http = require('http')
 
 var mongojs     = require('mongojs')
-var db          = mongojs('polo',["ticks"])
+var db          = mongojs('tradebot',["collector_polo"])
 
 var cookieParser = require('cookie-parser')
 var session = require('cookie-session')
@@ -63,7 +63,7 @@ app.get('/', apphandler);
 
 app.get('/api/data', function(req, res) {
 
-	db.ticks.find( {}, function (err, dbresp) {
+	db.collector_polo.find( {}, function (err, dbresp) {
 		var dbresptxt = JSON.stringify(dbresp)
 		//console.log(dbresp.length);
 		res.end(dbresptxt);
