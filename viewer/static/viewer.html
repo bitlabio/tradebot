@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+    		* { margin: 0; padding: 0; }
+            body {
+              background: #333; 
+              color: #ccc;
+              font-family: sans-serif;
+              font-size: 10px;
+              line-height: 2em;
+            }
+
+            canvas {
+              background: #333;
+            }
+
+            #grid {
+            	padding: 5px;
+            }
+    </style>
+</head>
+<body>
+	<canvas id="canvas" width="1850" height="780"></canvas>
+
+	<div id="best">best</div>
+	<div id="grid">grid</div>
+
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<script src="/lib/jquery.min.js"></script>
+<script>
+
+
+var ready = 0;
+
+
+var pricedata = []
+var curnamedata = []
+var rawdata = [];
+
+function drawline(x0, y0, x1, y1) {
+ var resolution = 1
+
+ x0 *= resolution
+ x0 = Math.round(x0)
+ 
+ y0 *= resolution
+ y0 = Math.round(y0)
+ 
+ x1 *= resolution
+ x1 = Math.round(x1)
+
+ y1 *= resolution
+ y1 = Math.round(y1)
+
+  var dx = Math.abs(x1 - x0), sx = x0 < x1 ? 1 : -1;
+  var dy = Math.abs(y1 - y0), sy = y0 < y1 ? 1 : -1; 
+  var err = (dx>dy ? dx : -dy)/2;
+ 
+  while (true) {
+    setPixel(x0,y0, resolution);
+    if (x0 === x1 && y0 === y1) break;
+    var e2 = err;
+    if (e2 > -dx) { err -= dy; x0 += sx; }
+    if (e2 < dy) { err += dx; y0 += sy; }
+  }
+}
+
+function plotCircle(xm, ym, r)
+{
+   var x = -r, y = 0, err = 2-2*r; /* II. Quadrant */ 
+   do {
+      setPixel(xm-x, ym+y); /*   I. Quadrant */
+      setPixel(xm-y, ym-x); /*  II. Quadrant */
+      setPixel(xm+x, ym-y); /* III. Quadrant */
+      setPixel(xm+y, ym+x); /*  IV. Quadrant */
+      r = err;
+      if (r <= y) err += ++y*2+1;           /* e_xy+e_y < 0 */
+      if (r > x || err > y) err += ++x*2+1; /* e_xy+e_x > 0 or no 2nd y-step */
+   } while (x < 0);
+}
+
+function setPixel(x, y, resolution) {
+	x = Math.round(x/resolution)
+	y = Math.round(y/resolution)
+	if (x >= 0) {
+		if (y >= 0) {
+			ctx.fillRect(x , y , 1, 1);			
+		}
+	}
+  
+}
+
+var WIDTH = 800;
+var HEIGHT = 500;
+
+var px = [];
+var py = [];
+var pz = [];
+
+var active;
+
+var focalLength = 200;
+
+var zoom = 1;
+
+var ry = 0;
+
+var canvas;
+var ctx;
+
+var segments = [
+    [0, 1],
+    [0, 2],
+    [0, 4],
+    [1, 3],
+    [1, 5],
+    [2, 3],
+    [2, 6],
+    [4, 5],
+    [4, 6],
+    [3, 7],
+    [5, 7],
+    [6, 7]
+];
+
+var ox = [],
+    oy = [];
+
+function init()
+{
+    ctx = document.getElementById('canvas').getContext('2d');
+    //ctx.translate(WIDTH/2, HEIGHT/2);
+    //ctx.translate(0, HEIGHT/2);
+       
+    draw();
+}
+
+var time = 0;
+var buylog = '';
+
+var end = 0;
+
+function draw()
+{
+	if (time < 100) { time = rawdata.length - 60 * 4}
+	time += 1;
+
+
+	//CLEAR
+    ctx.clearRect(-WIDTH, -HEIGHT, WIDTH*4, HEIGHT*4);
+
+    var vscale = -750;
+    var hscale = 1;
+
+    var best = 0;
+    var bestcur = 0;
+
+
+    for (var c in pricedata) {
+
+
+
+    	if (rawdata[0][curnamedata[c]].baseVolume > 10) {
+			//DRAW
+				if (time > 10) {
+					var profitability = pricedata[c][Math.round(time)] / pricedata[c][Math.round(time  - 10)] 	
+					if (profitability > best) { 
+						best = profitability; 
+						bestcur = c; 
+					}
+				}
+
+		    	//color
+		    	var col = hslToRgb(c/174, 1, 1);
+
+		    	if (bestcur == c) {
+		    		ctx.fillStyle = 'rgba('+col[0]+','+col[1]+','+col[2]+',1)'; 
+		    	} else {
+		    		ctx.fillStyle = 'rgba('+col[0]+','+col[1]+','+col[2]+',0.1)'; 
+		    	}
+		    	
+
+		    	var lastchange = 0;
+			    for (var p = 0; p < pricedata[c].length-1; p++) {
+			    	
+			    	if (time+10 > pricedata[c].length) { time = pricedata[c].length - 1; end = 1 }
+
+			    	var pricestart = pricedata[c][Math.round(time)]	    	
+
+
+
+			    	
+
+			    	if (pricestart == 0) { pricestart = 0.00000001 }
+			    	var change = (pricedata[c][p]/pricestart) - 1;
+
+
+			    	
+			    	drawline((p-1)*hscale - time*hscale + 1000, lastchange*vscale + 350, p*hscale - time*hscale + 1000, change*vscale + 350);	
+
+			    	lastchange = change
+			    }	
+			 //ENDDRAW
+    	}
+
+
+
+
+    }
+    
+
+    //SELL 
+
+
+    //BUY
+    if (end == 0) {
+	   	var col = hslToRgb(bestcur/200.0, 1, 1);
+		var htmlcol = 'rgba('+col[0]+','+col[1]+','+col[2]+',1)'; 
+	 	buylog = '<span style="color:'+htmlcol+'">'+bestcur + ' ' + curnamedata[bestcur] +' ' + rawdata[time].timestamp +'</span><br>' + buylog
+		$("#best").html(buylog) 	
+    }
+
+
+
+    
+    setTimeout(draw, 1 );
+    //draw()
+}
+
+
+
+
+
+
+
+
+$(document).ready(function() 
+{
+
+	
+	console.log("viewer app loading..")
+	
+	$.ajax({
+    url: '/api/data',
+    type: "GET",
+    success: function (data) {
+		var jdata = JSON.parse(data)
+		rawdata = JSON.parse(data)
+
+		var gridhtml = ''
+
+
+		//GRID
+			console.log("grid...")
+			for (var key in jdata[0]) {
+			   if (jdata[0].hasOwnProperty(key)) {
+			   	 var obj = jdata[0][key];
+			   	 if (obj.id != undefined) {
+				      
+				      //console.log(key);
+				      //console.log(obj);
+
+				      //plot[obj.id] = {key: key, graph: []}
+
+				    	var col = hslToRgb(obj.id/200.0, 1, 1);
+				    	var htmlcol = 'rgba('+col[0]+','+col[1]+','+col[2]+',1)'; 
+
+
+				      gridhtml += '<span style="color:'+htmlcol+'">'+obj.id + ' ' + key+' ' + obj.last +'</span><br>'
+				      pricedata[obj.id] = []
+				      curnamedata[obj.id] = key
+			   	 }
+
+			   }
+			}
+			$("#grid").html(gridhtml)
+
+
+
+		//PREPARE PRICE DATA
+		console.log("plot...")
+			for (var tick in jdata) {
+				for (var key in jdata[tick]) {
+				   if (jdata[tick].hasOwnProperty(key)) {
+				   	 var obj = jdata[tick][key];
+				   	 if (obj.id != undefined) {
+
+ 						pricedata[obj.id].push(obj.last);	
+
+					      
+				   	 }
+
+				   }
+				}	
+			}
+		
+		
+		
+		console.log("smoothing")
+		var samples = 15;
+		for (var c in pricedata) {
+			console.log(c)
+			
+			var avg = pricedata[c][0]
+			for (var p in pricedata[c]) {		
+				avg = (avg * (1 - (1/samples))) + (pricedata[c][p] * (1/samples))
+				pricedata[c][p] = avg
+			}		
+		}
+		
+
+		//console.log(jdata)
+		/*
+		var gridhtml = ''
+
+
+
+
+			console.log("asdasdasd...")
+			for (var key in jdata[0]) {
+			   if (jdata[0].hasOwnProperty(key)) {
+			      var obj = jdata[0][key];
+			      console.log(key);
+			      console.log(obj);
+
+			      plot[obj.id] = {key: key, graph: []}
+
+			      gridhtml += key+'<br>'
+			   }
+			}
+
+
+
+
+		
+		for (var d in jdata) {
+			//gridhtml += jdata[d].timestamp + "<br>";
+			console.log(d)
+			for (var key in jdata[d]) {
+			   if (jdata[d].hasOwnProperty(key)) {
+			      var obj = jdata[d][key];
+			      //console.log(key);
+			      //console.log(obj);
+			      //plot[obj.id].graph.push(obj.last*100)
+			   }
+			}
+
+
+
+			//graph.push(   500 - jdata[d].USDT_ETC.last*100 );
+		}
+
+		$("#grid").html(gridhtml)
+
+
+			for (var key in jdata[0]) {
+			   if (jdata[0].hasOwnProperty(key)) {
+			      var obj = jdata[0][key];
+	
+
+			      console.log(plot[obj.id].graph)
+			   }
+			}
+			*/
+
+
+		ready = 1;
+		init();
+    }
+	});
+});
+
+
+
+function hslToRgb(hue, sat, lum){
+    var r, g, b;
+
+
+
+	//H = hue (0-360)
+	//S = saturation (0-1)
+	//L = luminance (0-1)
+
+	var R1 = (Math.sin( hue * 2 * Math.PI )+1)/2 * lum
+	var G1 = (Math.sin( (hue + 1/3) * 2 * Math.PI)+1)/2 * lum 
+	var B1 = (Math.sin( (hue + 2/3) * 2 * Math.PI)+1)/2 * lum 
+
+	var avg = (R1 + G1 + B1) / 3 
+
+	var R2 = (R1 * sat)   +  (avg * (1-sat))   //((R1 - avg) * sat) + avg 
+	var G2 = (G1 * sat)   +  (avg * (1-sat))   //((G1 - avg) * sat) + avg 
+	var B2 = (B1 * sat)   +  (avg * (1-sat))   //((B1 - avg) * sat) + avg 
+
+	r = R2
+	g = G2
+	b = B2
+
+	return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
+}
+
+
+
+
+</script>
+
+</body>
+</html>
