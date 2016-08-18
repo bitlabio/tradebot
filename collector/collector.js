@@ -50,8 +50,9 @@ var polotick = function(cb) {
 	  	var jsontick = JSON.parse(buffer);
 	  	jsontick.timestamp = Date.now();
 	  	db.collector_polo.save(jsontick, function (err,res) {
-			console.log(jsontick)
-			console.log(res)
+	  		console.log('saved' + Date.now()/1000)
+			//console.log(jsontick)
+			//console.log(res)
 		});
 	  })
 
@@ -70,7 +71,7 @@ var polotick = function(cb) {
 polotick()
 
 
-var interval = setInterval( function() { polotick(); } , 60000 ); // 1 per minute;
+var interval = setInterval( function() { polotick(); } , 1000*60 ); // 1 minutes;
 
 
 

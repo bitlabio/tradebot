@@ -141,9 +141,11 @@ var buylog = '';
 
 var end = 0;
 
+var maxsamples = 10;
+
 function draw()
 {
-	if (time < 100) { time = rawdata.length - 60 * 4}
+	//if (time < 100) { time = rawdata.length - 60 * 4}
 	time += 1;
 
 
@@ -224,7 +226,7 @@ function draw()
 
 
     
-    setTimeout(draw, 1 );
+    setTimeout(draw, 100 );
     //draw()
 }
 
@@ -296,7 +298,7 @@ $(document).ready(function()
 			}
 		
 		
-		
+		/*
 		console.log("smoothing")
 		var samples = 15;
 		for (var c in pricedata) {
@@ -308,7 +310,7 @@ $(document).ready(function()
 				pricedata[c][p] = avg
 			}		
 		}
-		
+		*/
 
 		//console.log(jdata)
 		/*
